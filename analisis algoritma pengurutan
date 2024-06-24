@@ -1,0 +1,231 @@
+#include <iostream>
+#include <chrono>
+#include <algorithm>
+#include <random>
+
+using namespace std;
+using namespace std::chrono;
+
+// Deklarasi fungsi-fungsi pengurutan
+void bubbleSort(int arr[], int n);
+void insertionSort(int arr[], int n);
+void selectionSort(int arr[], int n);
+void mergeSort(int arr[], int l, int r);
+void quickSort(int arr[], int low, int high);
+
+// Fungsi untuk mengukur waktu eksekusi
+void measureTime(void (*sortFunc)(int[], int), int arr[], int n) {
+    auto start = high_resolution_clock::now();
+    sortFunc(arr, n);
+    auto end = high_resolution_clock::now();
+    auto duration = duration_cast<microseconds>(end - start);
+    cout << duration.count() << " microseconds" << endl;
+}
+
+void measureTimeMergeSort(void (*sortFunc)(int[], int, int), int arr[], int l, int r) {
+    auto start = high_resolution_clock::now();
+    sortFunc(arr, l, r);
+    auto end = high_resolution_clock::now();
+    auto duration = duration_cast<microseconds>(end - start);
+    cout << duration.count() << " microseconds" << endl;
+}
+
+void measureTimeQuickSort(void (*sortFunc)(int[], int, int), int arr[], int low, int high) {
+    auto start = high_resolution_clock::now();
+    sortFunc(arr, low, high);
+    auto end = high_resolution_clock::now();
+    auto duration = duration_cast<microseconds>(end - start);
+    cout << duration.count() << " microseconds" << endl;
+}
+
+// Implementasi fungsi Bubble Sort
+void bubbleSort(int arr[], int n) {
+    for (int i = 0; i < n-1; i++) {
+        for (int j = 0; j < n-i-1; j++) {
+            if (arr[j] > arr[j+1]) {
+                swap(arr[j], arr[j+1]);
+            }
+        }
+    }
+}
+
+// Implementasi fungsi Insertion Sort
+void insertionSort(int arr[], int n) {
+    for (int i = 1; i < n; i++) {
+        int key = arr[i];
+        int j = i - 1;
+        while (j >= 0 && arr[j] > key) {
+            arr[j + 1] = arr[j];
+            j = j - 1;
+        }
+        arr[j + 1] = key;
+    }
+}
+
+// Implementasi fungsi Selection Sort
+void selectionSort(int arr[], int n) {
+    for (int i = 0; i < n-1; i++) {
+        int min_idx = i;
+        for (int j = i+1; j < n; j++) {
+            if (arr[j] < arr[min_idx]) {
+                min_idx = j;
+            }
+        }
+        swap(arr[min_idx], arr[i]);
+    }
+}
+
+// Fungsi untuk menggabungkan dua subarray
+void merge(int arr[], int l, int m, int r) {
+    int n1 = m - l + 1;
+    int n2 = r - m;
+
+    int L[n1], R[n2];
+
+    for (int i = 0; i < n1; i++)
+        L[i] = arr[l + i];
+    for (int j = 0; j < n2; j++)
+        R[j] = arr[m + 1 + j];
+
+    int i = 0, j = 0, k = l;
+    while (i < n1 && j < n2) {
+        if (L[i] <= R[j]) {
+            arr[k] = L[i];
+            i++;
+        } else {
+            arr[k] = R[j];
+            j++;
+        }
+        k++;
+    }
+
+    while (i < n1) {
+        arr[k] = L[i];
+        i++;
+        k++;
+    }
+
+    while (j < n2) {
+        arr[k] = R[j];
+        j++;
+        k++;
+    }
+}
+
+// Implementasi fungsi Merge Sort
+void mergeSort(int arr[], int l, int r) {
+    if (l < r) {
+        int m = l + (r - l) / 2;
+        mergeSort(arr, l, m);
+        mergeSort(arr, m + 1, r);
+        merge(arr, l, m, r);
+    }
+}
+
+// Implementasi fungsi Quick Sort
+int partition(int arr[], int low, int high) {
+    int pivot = arr[high];
+    int i = (low - 1);
+    for (int j = low; j <= high - 1; j++) {
+        if (arr[j] < pivot) {
+            i++;
+            swap(arr[i], arr[j]);
+        }
+    }
+    swap(arr[i + 1], arr[high]);
+    return (i + 1);
+}
+
+void quickSort(int arr[], int low, int high) {
+    if (low < high) {
+        int pi = partition(arr, low, high);
+        quickSort(arr, low, pi - 1);
+        quickSort(arr, pi + 1, high);
+    }
+}
+
+void generateData(int* data, int n, int condition) {
+    random_device rd;
+    mt19937 gen(rd());
+    uniform_int_distribution<> dis(1, 10000);
+
+    for (int i = 0; i < n; i++) {
+        data[i] = dis(gen);
+    }
+
+    if (condition == 1) { // terurut terbalik
+        sort(data, data + n, greater<int>());
+    } else if (condition == 2) { // sudah terurut
+        sort(data, data + n);
+    }
+}
+
+int main() {
+    int sizes[] = {10, 100, 500, 1000, 10000};
+    for (int size : sizes) {
+        int* random_data = new int[size];
+        int* reversed_data = new int[size];
+        int* sorted_data = new int[size];
+
+        generateData(random_data, size, 0);
+        copy(random_data, random_data + size, reversed_data);
+        generateData(reversed_data, size, 1);
+        copy(random_data, random_data + size, sorted_data);
+        generateData(sorted_data, size, 2);
+
+        cout << "Size: " << size << endl;
+        
+        cout << "Bubble Sort on random data: ";
+        measureTime(bubbleSort, random_data, size);
+        
+        cout << "Bubble Sort on reversed data: ";
+        measureTime(bubbleSort, reversed_data, size);
+        
+        cout << "Bubble Sort on sorted data: ";
+        measureTime(bubbleSort, sorted_data, size);
+
+        cout << "Insertion Sort on random data: ";
+        measureTime(insertionSort, random_data, size);
+
+        cout << "Insertion Sort on reversed data: ";
+        measureTime(insertionSort, reversed_data, size);
+
+        cout << "Insertion Sort on sorted data: ";
+        measureTime(insertionSort, sorted_data, size);
+
+        cout << "Selection Sort on random data: ";
+        measureTime(selectionSort, random_data, size);
+
+        cout << "Selection Sort on reversed data: ";
+        measureTime(selectionSort, reversed_data, size);
+
+        cout << "Selection Sort on sorted data: ";
+        measureTime(selectionSort, sorted_data, size);
+
+        cout << "Merge Sort on random data: ";
+        measureTimeMergeSort(mergeSort, random_data, 0, size - 1);
+
+        cout << "Merge Sort on reversed data: ";
+        measureTimeMergeSort(mergeSort, reversed_data, 0, size - 1);
+
+        cout << "Merge Sort on sorted data: ";
+        measureTimeMergeSort(mergeSort, sorted_data, 0, size - 1);
+
+        cout << "Quick Sort on random data: ";
+        measureTimeQuickSort(quickSort, random_data, 0, size - 1);
+
+        cout << "Quick Sort on reversed data: ";
+        measureTimeQuickSort(quickSort, reversed_data, 0, size - 1);
+
+        cout << "Quick Sort on sorted data: ";
+        measureTimeQuickSort(quickSort, sorted_data, 0, size - 1);
+
+        delete[] random_data;
+        delete[] reversed_data;
+        delete[] sorted_data;
+
+        cout << endl;
+    }
+
+    return 0;
+}
